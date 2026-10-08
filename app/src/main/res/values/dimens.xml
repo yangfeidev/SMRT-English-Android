@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="page_margin">16dp</dimen>
+    <dimen name="card_margin">10dp</dimen>
+    <dimen name="card_radius">16dp</dimen>
+    <dimen name="card_radius_small">10dp</dimen>
+    <dimen name="space_4">4dp</dimen>
+    <dimen name="space_6">6dp</dimen>
+    <dimen name="space_8">8dp</dimen>
+    <dimen name="space_10">10dp</dimen>
+    <dimen name="space_12">12dp</dimen>
+    <dimen name="space_14">14dp</dimen>
+    <dimen name="space_16">16dp</dimen>
+    <dimen name="space_20">20dp</dimen>
+    <dimen name="space_24">24dp</dimen>
+    <dimen name="title_bar_height">48dp</dimen>
+    <dimen name="type_card_width">250dp</dimen>
+    <dimen name="type_card_height">170dp</dimen>
+    <dimen name="course_card_width">150dp</dimen>
+    <dimen name="course_card_height">195dp</dimen>
+</resources>

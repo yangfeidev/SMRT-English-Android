@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginTop="3dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="3dp"
+    android:background="@drawable/bg_lesson_row"
+    android:elevation="1dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="14dp"
+    android:paddingTop="11dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="11dp">
+
+    <TextView
+        android:id="@+id/tv_number"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_lesson_num"
+        android:gravity="center"
+        android:minWidth="38dp"
+        android:paddingStart="8dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp"
+        android:textColor="@color/accent"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        tools:text="1-1" />
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        tools:text="Vocabulary &amp; Listening A" />
+
+    <ImageView
+        android:id="@+id/iv_status"
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:contentDescription="@string/library_title"
+        android:src="@drawable/ic_chevron_right" />
+
+    <TextView
+        android:id="@+id/tv_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp"
+        android:visibility="gone"
+        tools:text="In Progress"
+        tools:visibility="visible" />
+</LinearLayout>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 页面大标题（Cafe / My Classes，对齐 iOS .system(size:32, weight:.bold)） -->
+    <style name="PageTitle" parent="android:Widget.TextView">
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- 分区标题（English Courses / 单元名） -->
+    <style name="SectionTitle" parent="android:Widget.TextView">
+        <item name="android:textSize">22sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- 卡片主标题 -->
+    <style name="CardTitle" parent="android:Widget.TextView">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- 卡片副标题 / 描述 -->
+    <style name="CardDesc" parent="android:Widget.TextView">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- 胶囊标签 -->
+    <style name="ChipText" parent="android:Widget.TextView">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/accent</item>
+    </style>
+
+    <!-- 分组小标题 -->
+    <style name="GroupTitle" parent="android:Widget.TextView">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- 主按钮 -->
+    <style name="PrimaryButton" parent="Widget.MaterialComponents.Button">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:background">@drawable/bg_gradient_accent</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="cornerRadius">14dp</item>
+    </style>
+</resources>

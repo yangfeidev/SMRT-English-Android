@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/tab_cafe"
+        android:icon="@drawable/ic_tab_cafe"
+        android:title="@string/tab_cafe" />
+    <item
+        android:id="@+id/tab_library"
+        android:icon="@drawable/ic_tab_library"
+        android:title="@string/tab_library" />
+    <item
+        android:id="@+id/tab_classes"
+        android:icon="@drawable/ic_tab_classes"
+        android:title="@string/tab_classes" />
+</menu>

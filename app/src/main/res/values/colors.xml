@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 对齐 iOS Theme.swift：品牌蓝为官网导航选中色 #2196F3 -->
+    <color name="accent">#2196F3</color>
+    <color name="accent_dark">#1976D2</color>
+    <color name="background">#F4F8FB</color>
+    <color name="card">#FFFFFF</color>
+    <color name="text_primary">#26262B</color>
+    <color name="text_secondary">#8C8C94</color>
+    <color name="divider">#EAEEF3</color>
+    <color name="transparent">#00000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="red">#E53935</color>
+    <color name="green">#43A047</color>
+
+    <!-- 底部 Tab -->
+    <color name="tab_blue">#2196F3</color>
+    <color name="tab_gray">#8E99A3</color>
+
+    <!-- 级别标签配色（取自官网 smrt.ui.global.min.css .category.{level}） -->
+    <color name="level_adult">#2196F3</color>
+    <color name="level_youth">#009688</color>
+    <color name="level_kids">#00BCD4</color>
+    <color name="level_children">#E91E63</color>
+
+    <!-- 启动页背景（对齐 iOS LaunchBackground.colorset） -->
+    <color name="splash_background">#FAF7F2</color>
+    <color name="ic_launcher_background">#2196F3</color>
+</resources>
