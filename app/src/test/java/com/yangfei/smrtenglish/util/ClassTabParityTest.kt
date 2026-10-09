@@ -189,6 +189,44 @@ class ClassTabParityTest {
         assertTrue("手机应为 0.9", js.contains("initial-scale=0.9, minimum-scale=0.9"))
     }
 
+    // MARK: - 同页 tab 导航折叠（返回键应直接退出本页）
+
+    /**
+     * 官网 Assignments 的 Scheduled/Shared/Complete 是 `<a href="?tab=...">`
+     * 真实导航，每切一次 history +1（实测 3→4→5），导致返回键逐级退回
+     * 切换过的标签。折叠脚本把同 path 的 ?tab= 导航改为 location.replace。
+     */
+    @Test
+    fun collapse_script_should_replace_history_and_keep_other_nav() {
+        val js = WebViewHelper.COLLAPSE_TAB_HISTORY_JS
+        assertTrue("同 path 判定", js.contains("u.pathname !== location.pathname"))
+        assertTrue("tab 参数判定", js.contains("searchParams.has('tab')"))
+        assertTrue("拦截点击默认行为", js.contains("ev.preventDefault()"))
+        assertTrue("用 replace 不入栈", js.contains("location.replace(a.href)"))
+        assertTrue("捕获阶段注册，先于站点自身 handler", js.contains("}, true);"))
+    }
+
+    /**
+     * 拼接式 JS 是「一行」，注释必须用斜杠星号块注释而非双斜杠行注释——
+     * 行注释会把同行后续语句一并注释掉，脚本静默失效。
+     * （曾真实踩坑：监听器注册了但什么都不做，defaultPrevented 恒为 false，
+     * history 照旧 3→4→5 增长。）
+     */
+    @Test
+    fun concatenated_js_must_not_use_line_comments() {
+        val scripts = mapOf(
+            "COLLAPSE_TAB_HISTORY_JS" to WebViewHelper.COLLAPSE_TAB_HISTORY_JS,
+            "CHINESE_NAME_NORMALIZE_JS" to WebViewHelper.CHINESE_NAME_NORMALIZE_JS,
+            "WIDE_VIEWPORT_PAN_CSS" to WebViewHelper.WIDE_VIEWPORT_PAN_CSS,
+        )
+        scripts.forEach { (name, js) ->
+            assertFalse(
+                "$name 含 // 行注释——拼接后为单行，会把后续语句注释掉",
+                Regex("""(^|[^:'"])//""").containsMatchIn(js)
+            )
+        }
+    }
+
     /**
      * onPageStarted 注入时文档可能仍是空的（documentElement/head 都为 null）。
      * 真机 360dp 实测：appendChild(null) 抛 TypeError 会中断整段脚本，

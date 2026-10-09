@@ -259,6 +259,41 @@ object WebViewHelper {
     // MARK: - 注入 JS
 
     /**
+     * 同页 tab 导航折叠：把「同 path、仅 ?tab= 不同」的站内链接改为
+     * `location.replace`，避免每次切换都往 WebView 浏览历史里塞一条，
+     * 导致返回键逐级退回切换过的标签而不是退出本页。
+     *
+     * 真机实测背景（教师 Assignments 的 Scheduled/Shared/Complete）：
+     * 三个 tab 是 `<a href="?tab=xxx">` 真实导航，
+     *   点击前 history.length=3 → 点 Complete → history.length=4
+     * 于是 canGoBack() 恒为真，返回键先 goBack（退到上个 tab）。
+     *
+     * 只接管「点击时」的导航；其它站内跳转（如行点进课时详情）不受影响，
+     * 仍保留正常历史以便逐级返回。
+     */
+    const val COLLAPSE_TAB_HISTORY_JS =
+        "(function() {" +
+        "  function isSamePathTabNav(a) {" +
+        "    try {" +
+        "      var href = a.getAttribute('href');" +
+        "      if (!href) { return false; }" +
+        "      var u = new URL(a.href, location.href);" +
+        "      if (u.pathname !== location.pathname) { return false; }" +
+        "      return u.searchParams.has('tab') || location.search.indexOf('tab=') >= 0;" +
+        "    } catch (e) { return false; }" +
+        "  }" +
+        "  document.addEventListener('click', function(ev) {" +
+        "    var a = ev.target && ev.target.closest ? ev.target.closest('a') : null;" +
+        "    if (!a || !isSamePathTabNav(a)) { return; }" +
+        // 注意：拼接出的整段 JS 是「一行」，只能用 /* */ 注释；
+        // 用 // 会把同行的后续语句全部注释掉（曾因此静默失效）。
+        "    /* 同 path 的 ?tab= 切换：替换当前历史项而非新增 */" +
+        "    ev.preventDefault();" +
+        "    location.replace(a.href);" +
+        "  }, true);" +
+        "})();"
+
+    /**
      * 页面加载完成后执行的 JS：head 一就绪就挂上 style，首屏渲染前生效。
      *
      * CSS 经 JSON 编码为合法 JS 字符串字面量——内容含单引号/双引号/换行均安全
@@ -419,6 +454,14 @@ object WebViewHelper {
         val viewportScale: Double? = null,
         /** 页面加载完成后执行的 JS（如 chineseNameNormalizeJS） */
         val pageLoadJs: String? = null,
+        /**
+         * 同页 tab 导航折叠（如官网 Assignments 的 Scheduled/Shared/Complete）：
+         * 这些 tab 是 `<a href="?tab=xxx">` 的真实页面导航，每切一次都会在
+         * WebView 里新增一条浏览历史，导致返回键逐级退回切换过的标签，
+         * 而不是退出班级页。开启后把「同 path、仅 ?tab= 不同」的导航改写为
+         * location.replace（替换当前历史项），返回键即直接退出本页。
+         */
+        val collapseTabHistory: Boolean = false,
     )
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -489,12 +532,21 @@ object WebViewHelper {
                 if (config.hideSiteHeader || config.extraCss.isNotEmpty()) {
                     view?.evaluateJavascript(hideJs, null)
                 }
+                // 同页 tab 导航折叠：越早注册越好（首屏就可能点 tab）
+                if (config.collapseTabHistory) {
+                    view?.evaluateJavascript(COLLAPSE_TAB_HISTORY_JS, null)
+                }
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 // CSS 兜底再挂一次（同名规则重复无视觉影响；防早期注入被站点覆盖）
                 if (config.hideSiteHeader || config.extraCss.isNotEmpty()) {
                     view?.evaluateJavascript(hideJs, null)
+                }
+                // 折叠脚本兜底再挂一次：站点可能重写 DOM / 早注入被覆盖，
+                // 且每次导航后需重新注册（document 是新的一份）
+                if (config.collapseTabHistory) {
+                    view?.evaluateJavascript(COLLAPSE_TAB_HISTORY_JS, null)
                 }
                 pageLoadJs?.let { view?.evaluateJavascript(it, null) }
             }

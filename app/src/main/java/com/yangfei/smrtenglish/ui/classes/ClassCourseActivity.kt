@@ -366,7 +366,10 @@ class ClassCourseActivity : BaseActivity<ActivityClassCourseBinding, ClassCourse
                     extraCss = hideChrome + WebViewHelper.TEACHER_TABLE_SHRINK_CSS +
                         WebViewHelper.WIDE_VIEWPORT_PAN_CSS,
                     fixedViewportWidth = 1024, viewportShrinkLowerBound = 992,
-                    viewportScale = 0.9, pageLoadJs = WebViewHelper.CHINESE_NAME_NORMALIZE_JS
+                    viewportScale = 0.9, pageLoadJs = WebViewHelper.CHINESE_NAME_NORMALIZE_JS,
+                    // Scheduled/Shared/Complete 是同 path 的 ?tab= 真实导航：
+                    // 折叠历史，否则返回键会逐级退回切换过的标签而非退出班级页
+                    collapseTabHistory = true
                 )
             ClassTab.ASSESSMENTS ->
                 WebViewHelper.PageConfig(
