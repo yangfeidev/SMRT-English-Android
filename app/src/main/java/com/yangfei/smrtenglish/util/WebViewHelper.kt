@@ -414,7 +414,7 @@ object WebViewHelper {
         val viewportShrinkLowerBound: Int? = null,
         /**
          * 宽视口的显示缩放（0.9 = 内容整体缩到 90%，手机观感更合适）；
-         * 仅手机生效（≥600dp 的大屏 1:1 渲染，对齐 iOS 的 iPad 判定）
+         * 仅手机生效——平板 1:1 渲染不缩放（对齐 iOS 的 iPad 判定）
          */
         val viewportScale: Double? = null,
         /** 页面加载完成后执行的 JS（如 chineseNameNormalizeJS） */
@@ -468,11 +468,15 @@ object WebViewHelper {
         webView.webChromeClient = pageChromeClient(onProgress)
         val hideJs = hideHeaderJs(config.extraCss)
         val viewportJs = config.fixedViewportWidth?.let {
-            // 显示缩放：所有设备统一生效（对齐 iOS 的「非 iPad 一律缩放」）。
-            // 不用 smallestScreenWidthDp >= 600 做豁免——该判据在「高分辨率 + 低密度」
-            // 的机型上会误报平板（实测 1080×1920 @240dpi 报 720dp，实为手机），
-            // 导致本应缩放到 0.9 的机器按 1:1 渲染，字号与可见列数和 iOS 不一致。
-            viewportJs(it, config.viewportShrinkLowerBound, config.viewportScale)
+            // 显示缩放仅手机生效：平板屏幕大，1:1 渲染正合适，再缩反而字太小
+            // （对齐 iOS WebViewRepresentable: userInterfaceIdiom == .pad ? nil : viewportScale）。
+            // 平板判定用 smallestScreenWidthDp >= 600（Android 官方的 sw600dp 分界，
+            // 与 iOS 的 iPad 语义等价）：实测平板 sw720dp、手机 sw360dp，区分可靠。
+            val scale = effectiveViewportScale(
+                isTablet = isTablet(webView.context),
+                viewportScale = config.viewportScale
+            )
+            viewportJs(it, config.viewportShrinkLowerBound, scale)
         }
         val pageLoadJs = config.pageLoadJs
         val client = object : WebViewClient() {
@@ -509,6 +513,16 @@ object WebViewHelper {
     /** ≥600dp 视为平板/大屏（对齐 iOS 的 iPad 判定 userInterfaceIdiom == .pad） */
     fun isTablet(context: android.content.Context): Boolean =
         context.resources.configuration.smallestScreenWidthDp >= 600
+
+    /**
+     * 宽视口页的实际显示缩放（纯函数，便于单测）：
+     * 手机 → 传入的 [viewportScale]（如 0.9）；平板 → null（1:1 不缩放）。
+     *
+     * 对齐 iOS `UIDevice.current.userInterfaceIdiom == .pad ? nil : viewportScale`：
+     * 平板屏幕大，1:1 渲染正合适；再缩会让字更小、内容被拉宽。
+     */
+    fun effectiveViewportScale(isTablet: Boolean, viewportScale: Double?): Double? =
+        if (isTablet) null else viewportScale
 
     /** 进度条通用驱动：0~100 显示，100 隐藏（对齐 iOS WebViewProgressOverlay） */
     fun bindProgress(progressBar: ProgressBar): (Int) -> Unit = { progress ->

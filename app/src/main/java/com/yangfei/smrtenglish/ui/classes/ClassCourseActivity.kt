@@ -74,6 +74,23 @@ class ClassCourseActivity : BaseActivity<ActivityClassCourseBinding, ClassCourse
     /** 教师 wide table 页（横竖屏切换悬浮钮仅这两页，对齐 iOS TeacherWideTableModifier） */
     private val wideTableTabs = setOf(ClassTab.ASSIGNMENTS, ClassTab.ATTENDANCE)
 
+    /**
+     * 本页是否**主动**把方向锁成了横屏（仅教师宽表格页的悬浮钮会置位）。
+     *
+     * 用于区分两种「横屏」：
+     * - 设备天然横屏（平板 / 横屏模拟器）：与页面意愿无关，本页不应改动它；
+     * - 页面主动锁横屏：离开该 tab / 页面时才需要恢复竖屏。
+     *
+     * 等价于 iOS 的 OrientationLock.shared.landscapeOnly。
+     * 早期实现误用 isLandscape()（设备当前方向）判断，导致平板一进班级页就被
+     * 强制扭成竖屏。
+     *
+     * 直接由 requestedOrientation 派生（唯一事实来源），避免另开布尔量与
+     * 系统状态不同步。
+     */
+    private val forcedLandscape: Boolean
+        get() = requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+
     // 原生子 Tab 数据缓存（旋转重建后由 LiveData 重放回填）
     private var cachedMembers: List<String>? = null
     private var cachedAssignments: List<ClassAssignment>? = null
@@ -241,9 +258,17 @@ class ClassCourseActivity : BaseActivity<ActivityClassCourseBinding, ClassCourse
             activeWebView = null
         }
 
-        // 横屏时切到不支持横屏的 tab（Course/Class List/Assessments/Gradebook）
-        // 恢复竖屏；Assignments↔Attendance 互切保持横屏（对齐 iOS onChange(selectedTab)）
-        if (isLandscape() && !(isTeacher && tab in wideTableTabs)) {
+        // 横屏且「本页主动切成了横屏」（教师宽表格页）时，切到不支持横屏的
+        // tab（Course/Class List/Assessments/Gradebook）才恢复竖屏；
+        // Assignments↔Attendance 互切保持横屏（对齐 iOS onChange(selectedTab)）。
+        //
+        // 判据必须是「我们自己把页面锁成了横屏」(landscapeForcedByPage)，
+        // 而不能用「设备当前就是横屏」(isLandscape)：
+        // 平板/横屏模拟器天然为横屏时，isLandscape() 恒 true，会把本来正常的
+        // 横屏强制扭成竖屏（进班级页即被转竖屏的 bug）。iOS 用的是
+        // OrientationLock.landscapeOnly —— 只反映「页面主动锁横屏」，与设备
+        // 自然方向无关，这里对齐该语义。
+        if (forcedLandscape && !(isTeacher && tab in wideTableTabs)) {
             setOrientation(false)
         }
 
@@ -644,7 +669,8 @@ class ClassCourseActivity : BaseActivity<ActivityClassCourseBinding, ClassCourse
             webView.goBack()
             return
         }
-        if (isLandscape()) setOrientation(false)
+        // 只有本页主动锁过横屏才需要恢复竖屏；设备天然横屏（平板）不该被扭回
+        if (forcedLandscape) setOrientation(false)
         finish()
     }
 
@@ -733,8 +759,10 @@ class ClassCourseActivity : BaseActivity<ActivityClassCourseBinding, ClassCourse
     }
 
     override fun onDestroy() {
-        // 离开班级页恢复竖屏（对齐 iOS onDisappear）
-        if (isLandscape()) setOrientation(false)
+        // 离开班级页时仅撤销「本页主动锁的横屏」（对齐 iOS onDisappear 的
+        // orientationLock.landscapeOnly 判断）；设备天然横屏不动，
+        // 否则平板上退出班级页会把整个 App 扭成竖屏
+        if (forcedLandscape) setOrientation(false)
         webViews.values.forEach {
             it.stopLoading()
             it.destroy()

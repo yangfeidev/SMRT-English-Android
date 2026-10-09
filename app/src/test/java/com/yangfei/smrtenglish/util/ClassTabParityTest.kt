@@ -147,6 +147,48 @@ class ClassTabParityTest {
         assertFalse(js.contains("Math.min(w || 992, 1024)"))
     }
 
+    // MARK: - 显示缩放：仅手机缩放，平板 1:1（对齐 iOS iPad 判定）
+
+    /**
+     * iOS：`UIDevice.userInterfaceIdiom == .pad ? nil : viewportScale`
+     * —— 平板传 nil（1:1 不缩放），只有手机才缩到 0.9。
+     * 回归背景：曾把平板豁免整体删掉，导致平板也按 0.9 渲染
+     * （实测平板 sw720dp 时 initial-scale=0.9，内容被拉宽、右侧留白）。
+     */
+    @Test
+    fun tablet_should_not_apply_viewport_scale() {
+        assertEquals(null, WebViewHelper.effectiveViewportScale(isTablet = true, viewportScale = 0.9))
+    }
+
+    @Test
+    fun phone_should_apply_viewport_scale() {
+        assertEquals(0.9, WebViewHelper.effectiveViewportScale(isTablet = false, viewportScale = 0.9))
+        assertEquals(0.9, WebViewHelper.effectiveViewportScale(isTablet = false, viewportScale = 0.9)!!, 1e-9)
+    }
+
+    @Test
+    fun no_scale_passed_stays_null_on_both() {
+        assertEquals(null, WebViewHelper.effectiveViewportScale(isTablet = false, viewportScale = null))
+        assertEquals(null, WebViewHelper.effectiveViewportScale(isTablet = true, viewportScale = null))
+    }
+
+    /** 平板 → 视口脚本应产出 1:1（initial-scale=1.0），而不是 0.9 */
+    @Test
+    fun tablet_viewport_script_renders_one_to_one() {
+        val scale = WebViewHelper.effectiveViewportScale(isTablet = true, viewportScale = 0.9)
+        val js = WebViewHelper.viewportJs(1024, 992, scale)
+        assertTrue("平板应为 1:1", js.contains("initial-scale=1.0, minimum-scale=1.0"))
+        assertFalse("平板不该出现 0.9", js.contains("initial-scale=0.9"))
+    }
+
+    /** 手机 → 视口脚本应产出 0.9 */
+    @Test
+    fun phone_viewport_script_renders_scaled() {
+        val scale = WebViewHelper.effectiveViewportScale(isTablet = false, viewportScale = 0.9)
+        val js = WebViewHelper.viewportJs(1024, 992, scale)
+        assertTrue("手机应为 0.9", js.contains("initial-scale=0.9, minimum-scale=0.9"))
+    }
+
     /**
      * onPageStarted 注入时文档可能仍是空的（documentElement/head 都为 null）。
      * 真机 360dp 实测：appendChild(null) 抛 TypeError 会中断整段脚本，
