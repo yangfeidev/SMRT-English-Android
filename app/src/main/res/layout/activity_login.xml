@@ -26,28 +26,15 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintWidth_max="480dp">
 
-            <!-- 品牌区：蓝色书本 + 圆体字标 -->
-            <LinearLayout
-                android:layout_width="wrap_content"
+            <!-- 品牌区：官方组合标（蓝色书本 + smrt 字标已含在图内，
+                 故不再单独渲染 smrt 文字，避免字标重复） -->
+            <ImageView
+                android:id="@+id/iv_logo"
+                android:layout_width="196dp"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:contentDescription="@string/app_name"
-                    android:src="@drawable/ic_splash_logo" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:text="smrt"
-                    android:textColor="@color/text_primary"
-                    android:textSize="52sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/ic_brand_logo" />
 
             <TextView
                 android:layout_width="wrap_content"
