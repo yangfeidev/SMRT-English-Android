@@ -42,7 +42,8 @@
     <string name="classes_expired">登录已过期</string>
     <string name="classes_expired_desc">会话已失效，请重新登录后使用</string>
     <string name="classes_relogin">重新登录</string>
-    <string name="classes_footer">SMRT English · 个人学习使用</string>
+    <!-- 对齐 iOS ProfileSection：底部文案带版本号（跟随 BuildConfig.VERSION_NAME） -->
+    <string name="classes_footer_format">SMRT English v%1$s · 个人学习使用</string>
     <string name="classes_no_course">暂无课程内容</string>
     <string name="logout_confirm_title">确定退出登录？</string>
     <string name="logout_confirm">退出登录</string>
@@ -54,10 +55,16 @@
     <string name="classes_assignments_empty">No Assignments</string>
     <string name="classes_members_empty">No Members</string>
     <string name="classes_class_info_empty">No Class Info</string>
-    <string name="classes_attendance_empty">No Attendance Records</string>
-    <string name="classes_assessments_empty">No Assessment Results</string>
-    <string name="classes_attendance_web">考勤记录请在网页端查看</string>
-    <string name="classes_assessments_web">测评结果请在网页端查看</string>
+
+    <!-- 教师端（对齐 iOS TeacherTabViews / ProfileSection 角色徽标） -->
+    <string name="back">返回</string>
+    <string name="teacher_rotate">切换横竖屏</string>
+    <string name="role_teacher">教师</string>
+    <string name="role_student">学生</string>
+    <string name="teacher_list_current">Current</string>
+    <string name="teacher_list_removed">Removed</string>
+    <string name="teacher_students_empty">No Students</string>
+    <string name="teacher_removed_students_empty">No Removed Students</string>
 
     <!-- 错误提示（对齐 iOS SMRTError） -->
     <string name="error_bad_response">网络响应异常</string>

@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 横屏手机轮廓（教师端宽表格页横竖屏切换悬浮钮，对齐 iOS rectangle.landscape.rotate） -->
+    <path
+        android:pathData="M7.5,8.75 L16.5,8.75 A2.25,2.25 0 0 1 18.75,11 L18.75,13 A2.25,2.25 0 0 1 16.5,15.25 L7.5,15.25 A2.25,2.25 0 0 1 5.25,13 L5.25,11 A2.25,2.25 0 0 1 7.5,8.75 Z"
+        android:strokeColor="#2196F3"
+        android:strokeWidth="1.8"
+        android:fillColor="#00000000" />
+    <!-- 旋转箭头弧线 + 箭头 -->
+    <path
+        android:pathData="M4.4,7.2 A8.6,8.6 0 0 1 19.6,6.4"
+        android:strokeColor="#2196F3"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M19.9,3.5 L19.8,6.7 L16.6,6.3"
+        android:strokeColor="#2196F3"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>

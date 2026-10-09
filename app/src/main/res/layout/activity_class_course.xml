@@ -11,28 +11,50 @@
         android:layout_width="match_parent"
         android:layout_height="0dp" />
 
+    <!-- 顶栏：竖屏 = TitleBar（标题+返回）+ 胶囊 tab 两行；
+         教师宽表格页横屏 = TitleBar 隐藏，紧凑返回钮与 tab 合并一行 -->
     <com.yangfei.smrtenglish.view.TitleBar
         android:id="@+id/top_bar_view"
         android:layout_width="match_parent"
         android:layout_height="@dimen/title_bar_height" />
 
-    <!-- 子 Tab 行（Course / Class List / Attendance / Assignments / Assessments / Class Info） -->
-    <HorizontalScrollView
-        android:id="@+id/tab_scroll"
+    <!-- 子 Tab 行（Course / Class List / Attendance / Assignments / [Gradebook] / Assessments / Class Info） -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:scrollbars="none">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-        <LinearLayout
-            android:id="@+id/tab_container"
-            android:layout_width="wrap_content"
+        <!-- 横屏紧凑返回钮（对齐 iOS compactTopBar：返回按钮与胶囊 tab 合并一行） -->
+        <ImageButton
+            android:id="@+id/btn_back_compact"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_circle_card"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_arrow_back"
+            android:scaleType="center"
+            android:visibility="gone" />
+
+        <HorizontalScrollView
+            android:id="@+id/tab_scroll"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp" />
-    </HorizontalScrollView>
+            android:layout_weight="1"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/tab_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp" />
+        </HorizontalScrollView>
+    </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -48,7 +70,7 @@
             android:paddingBottom="24dp"
             tools:listitem="@layout/item_class_unit" />
 
-        <!-- 非 Course 子 Tab 的内容容器（成员列表/作业列表/键值对，代码动态填充） -->
+        <!-- 非 Course 子 Tab 的原生内容容器（成员列表/作业列表/键值对，代码动态填充） -->
         <ScrollView
             android:id="@+id/tab_content"
             android:layout_width="match_parent"
@@ -68,6 +90,41 @@
                 android:paddingEnd="16dp"
                 android:paddingBottom="24dp" />
         </ScrollView>
+
+        <!-- WebView 子 Tab 容器（学生 Attendance/Assessments 补齐 + 教师端四个承载页，
+             代码动态创建 WebView；顶部细进度条对齐 iOS WebViewProgressOverlay） -->
+        <FrameLayout
+            android:id="@+id/web_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/web_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_gravity="top"
+                android:progressTint="@color/accent"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- 教师宽表格页横竖屏切换悬浮钮（对齐 iOS TeacherWideTableModifier）。
+             bottomMargin 抬到 84dp：官网右下角自带悬浮 Help/主页按钮（约 80dp 高），
+             原贴底 14dp 会与之重叠——用户点官网按钮/翻页控件实际点到这里，误触旋转 -->
+        <ImageButton
+            android:id="@+id/btn_rotate"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="14dp"
+            android:layout_marginBottom="84dp"
+            android:background="@drawable/bg_circle_card"
+            android:contentDescription="@string/teacher_rotate"
+            android:elevation="6dp"
+            android:src="@drawable/ic_rotate_landscape"
+            android:scaleType="center"
+            android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/layout_loading"

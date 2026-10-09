@@ -34,3 +34,9 @@ data class SessionEvent(val type: Int) {
         const val TYPE_RESTORED = 2
     }
 }
+
+/**
+ * 账号角色事件（教师号/学生号判定完成或变化，对齐 iOS
+ * smrtAccountRoleDidChange 通知，Me 区块徽标监听刷新）
+ */
+data class AccountRoleEvent(val isTeacher: Boolean)

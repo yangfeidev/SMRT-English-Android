@@ -17,6 +17,9 @@ object MConstant {
     /** 用户主动退出登录的标记：保留账密回填，但禁止静默自动重登 */
     const val LOGGED_OUT_BY_USER = "smrt.logged.out.by.user"
 
+    /** 账号角色缓存（教师号 true / 学生号 false，对齐 iOS smrt.account.isTeacher） */
+    const val ACCOUNT_IS_TEACHER = "smrt.account.isTeacher"
+
     /** 手动持久化的会话 Cookie（PHPSESSID 无过期时间，OkHttp 不会落盘） */
     const val PERSISTED_COOKIES = "smrt.persisted.cookies"
 

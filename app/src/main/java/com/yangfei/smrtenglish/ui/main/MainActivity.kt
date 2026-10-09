@@ -6,6 +6,7 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import com.yangfei.smrtenglish.R
 import com.yangfei.smrtenglish.base.BaseActivity
+import com.yangfei.smrtenglish.base.BaseApplication
 import com.yangfei.smrtenglish.constant.ValueConstant
 import com.yangfei.smrtenglish.databinding.ActivityMainBinding
 import com.yangfei.smrtenglish.ui.cafe.CafeFragment
@@ -26,6 +27,9 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     private val fragments = HashMap<Int, Fragment>()
     private var lastSessionCheckTime = 0L
     private var isLoginPageShowing = false
+
+    /** onStop 时 App 是否真正退到后台（被自家 Activity 覆盖不算，对齐 iOS willEnterForeground） */
+    private var backgroundedAtStop = false
 
     /** 当前 Tab（横竖屏切换会重建 Activity，这里靠 onSaveInstanceState 保留） */
     private var currentTabId = R.id.tab_cafe
@@ -124,6 +128,27 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     override fun onResume() {
         super.onResume()
         isLoginPageShowing = false
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // 回前台校验：会话被顶掉（如网页端单点登录互踢）多发生在 App 外，
+        // 停在 Classes 页期间不会触发切 tab 校验——回前台是发现失效的主要时机，
+        // 不受 5 分钟节流限制（节流只约束 tab 切换的重复校验）。
+        // 对齐 iOS MainTabView 的 willEnterForegroundNotification。
+        if (backgroundedAtStop) {
+            backgroundedAtStop = false
+            if (currentTabId == R.id.tab_classes) {
+                viewModel.validateSession()
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // super.onStop() 完成后本 Activity 已从前台计数中扣除：
+        // 此时 App 仍无 started 的 Activity → 是真退后台；否则是被自家页面覆盖
+        backgroundedAtStop = !BaseApplication.globalContext().isAppInForeground()
     }
 
     companion object {

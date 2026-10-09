@@ -61,6 +61,18 @@ object UiUtils {
         return ((available + 10) / 74).coerceAtLeast(4)
     }
 
+    /**
+     * 自适应网格列数（对齐 SwiftUI `GridItem(.adaptive(minimum:))` 的排布算法）：
+     * n 列需满足 n*min + (n-1)*spacing ≤ availableWidth，取满足条件的最大 n，至少 1 列。
+     *
+     * 纯函数（不依赖 Context），便于单测覆盖；[ClassesFragment] 内联网格与班级详情页
+     * 学生 Class List 共用同一套算法，避免两处各自写死后与 iOS 不一致。
+     */
+    fun adaptiveColumns(availableWidthDp: Int, minItemWidthDp: Int, spacingDp: Int): Int {
+        val step = (minItemWidthDp + spacingDp).coerceAtLeast(1)
+        return ((availableWidthDp + spacingDp) / step).coerceAtLeast(1)
+    }
+
     /** 圆形描边（成员头像选中态：自己 2dp 品牌色，他人 1dp 淡色） */
     fun circleStroke(context: Context, color: Int, widthDp: Float): GradientDrawable =
         GradientDrawable().apply {

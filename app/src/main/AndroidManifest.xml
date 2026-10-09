@@ -57,7 +57,12 @@
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:hardwareAccelerated="true" />
 
-        <activity android:name=".ui.classes.ClassCourseActivity" />
+        <!-- 教师端宽表格页锁横屏（requestedOrientation 动态切换）：
+             声明 configChanges 避免旋转重建（WebView 已加载内容不丢），
+             横竖屏顶栏切换在 onConfigurationChanged 处理 -->
+        <activity
+            android:name=".ui.classes.ClassCourseActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
 
         <activity
             android:name=".ui.web.WebActivity"

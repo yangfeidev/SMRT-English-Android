@@ -2,6 +2,7 @@ package com.yangfei.smrtenglish.base.manager
 
 import com.yangfei.smrtenglish.constant.MConstant
 import com.yangfei.smrtenglish.http.Request
+import com.yangfei.smrtenglish.util.AccountRoleEvent
 import com.yangfei.smrtenglish.util.EventBusUtil
 import com.yangfei.smrtenglish.util.MMKVUtils
 import com.yangfei.smrtenglish.util.SessionEvent
@@ -26,14 +27,27 @@ object SessionManager {
         get() = MMKVUtils.getString(MConstant.ACCOUNT_DISPLAY_NAME, "").ifEmpty { null }
         set(value) = MMKVUtils.putString(MConstant.ACCOUNT_DISPLAY_NAME, value)
 
-    /**
-     * 用户主动退出登录的标记。
-     * 退出后账密会保留（用于登录页回填），必须靠这个标记阻断启动时的静默重登，
-     * 否则「退出登录 + 重启 App」会被 autoReloginIfNeeded 悄悄登回去。
-     */
+    /** 用户主动退出登录的标记。 */
     var loggedOutByUser: Boolean
         get() = MMKVUtils.getBoolean(MConstant.LOGGED_OUT_BY_USER, false)
         set(value) = MMKVUtils.putBoolean(MConstant.LOGGED_OUT_BY_USER, value)
+
+    /** 账号角色持久化缓存（教师号 true；未知默认 false 学生，对齐 iOS smrt.account.isTeacher） */
+    var isTeacher: Boolean
+        get() = MMKVUtils.getBoolean(MConstant.ACCOUNT_IS_TEACHER, false)
+        private set(value) = MMKVUtils.putBoolean(MConstant.ACCOUNT_IS_TEACHER, value)
+
+    /**
+     * 更新账号角色并广播（值不变时不发，对齐 iOS SMRTClient.updateAccountRole）。
+     * - classes 列表页「Join a Class」入口判定（学生号特征）兜底
+     * - 班级 course 页侧栏 gradebook 链接做硬校正
+     * Me 区块角色徽标监听 AccountRoleEvent 刷新。
+     */
+    fun updateAccountRole(teacher: Boolean) {
+        if (isTeacher == teacher) return
+        isTeacher = teacher
+        EventBusUtil.post(AccountRoleEvent(teacher))
+    }
 
     fun saveCredentials(accountEmail: String, accountPassword: String) {
         email = accountEmail
@@ -51,6 +65,9 @@ object SessionManager {
     fun logout() {
         Request.cookieJar.clear()
         displayName = null
+        // 角色缓存一并清理（对齐 iOS logout 清 roleKey）；下次登录由
+        // classes/course 页解析重新判定
+        isTeacher = false
         loggedOutByUser = true
         EventBusUtil.post(SessionEvent(SessionEvent.TYPE_INVALID))
     }

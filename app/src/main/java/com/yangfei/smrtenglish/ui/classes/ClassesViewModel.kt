@@ -25,8 +25,9 @@ class ClassesViewModel : BaseViewModel() {
     val displayNameResult: MutableLiveData<Response<String>> = MutableLiveData()
 
     /**
-     * 拉班级列表；会话失效时先静默重登（记住过密码时）再重试一次，
-     * 仍失败则标记 sessionValid=false（不弹登录页，由 Me 区块给出重新登录入口）。
+     * 拉班级列表。SmrtApi.myClasses 内部已含会话恢复：
+     * 失效先静默重登再重试；重登失败广播 TYPE_INVALID 全局切登录页。
+     * 这里 catch 后仍收到 notLoggedIn 时，把 Me 区块切「登录已过期」兜底显示。
      */
     fun loadClasses(showDialog: Boolean = true) {
         load(classesResult, showDialog = showDialog, showErrorToast = false) {
@@ -34,11 +35,7 @@ class ClassesViewModel : BaseViewModel() {
                 ClassesData(classes = SmrtApi.myClasses(), sessionValid = true)
             } catch (e: SmrtException) {
                 if (!e.isNotLoggedIn()) throw e
-                if (SmrtApi.autoReloginIfNeeded()) {
-                    ClassesData(classes = SmrtApi.myClasses(), sessionValid = true)
-                } else {
-                    ClassesData(classes = emptyList(), sessionValid = false)
-                }
+                ClassesData(classes = emptyList(), sessionValid = false)
             }
         }
     }

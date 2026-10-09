@@ -62,7 +62,9 @@ data class ClassCourse(
     val courseName: String = "",
     /** 课程在 Library 的 id（页面 folder_open 按钮的 /sunshine/library/{id}） */
     val courseLibraryId: String = "",
-    val units: List<ClassUnit> = emptyList()
+    val units: List<ClassUnit> = emptyList(),
+    /** 是否教师端（班级页侧栏含 Gradebook 入口——学生端 6 项、教师端 7 项） */
+    val isTeacher: Boolean = false
 ) : Parcelable
 
 /** 班级页子 Tab（对齐 iOS ClassTab；path = 官网 URL 路径段） */
@@ -73,12 +75,28 @@ enum class ClassTab(val path: String, val title: String) {
     ASSIGNMENTS("assignments", "Assignments"),
     /** 注意 Assessments 的官网路径是 evaluation */
     ASSESSMENTS("evaluation", "Assessments"),
+    /** 教师端独有第 7 项（学生端隐藏，见 ClassCourseActivity.visibleTabs） */
+    GRADEBOOK("gradebook", "Gradebook"),
     CLASS_INFO("classinfo", "Class Info");
 
     companion object {
         fun fromPath(path: String): ClassTab? = entries.firstOrNull { it.path == path }
     }
 }
+
+/**
+ * 教师端 Class List 成员行（表格视图：头像 / 姓名 / Id / Email，
+ * 对齐 iOS TeacherClassListMember）
+ */
+data class TeacherClassListMember(
+    /** 学生 id（view=student 链接） */
+    val id: String,
+    val name: String,
+    /** 学生 Id 列（官网当前显示为空） */
+    val number: String,
+    val email: String,
+    val avatarURL: String?
+)
 
 /** 班级作业（Assignments 页表格行，学生只读视角，对齐 iOS ClassAssignment） */
 data class ClassAssignment(

@@ -18,6 +18,7 @@ import com.yangfei.smrtenglish.bean.LibraryTypeCard
 import com.yangfei.smrtenglish.bean.StudentClass
 import com.yangfei.smrtenglish.bean.ClassAssignment
 import com.yangfei.smrtenglish.bean.ClassInfoItem
+import com.yangfei.smrtenglish.bean.TeacherClassListMember
 import java.util.Locale
 
 /**
@@ -508,7 +509,8 @@ object SMRTHTMLParser {
             className = className,
             courseName = courseName,
             courseLibraryId = courseLibraryId,
-            units = units
+            units = units,
+            isTeacher = isTeacherHTML(html)
         )
     }
 
@@ -522,13 +524,13 @@ object SMRTHTMLParser {
         lessons.clear()
     }
 
-    // MARK: - 6b. 班级子页面（Class List / Assignments / Attendance / Assessments / Class Info）
+    // MARK: - 6b. 班级子页面（Class List / Assignments / Class Info）
     //
-    // 学生只读视角的 5 个低频页面，结构都很简单（对齐 iOS 同名解析函数）：
+    // 学生只读视角的原生解析页（对齐 iOS 同名解析函数）：
     // - classlist：p.miniprofile-title 成员名列表
     // - assignments：表格行 = 状态(tippy) + 标题(链接到课时#ex) + 截止日期 + 得分(resultgraph)
-    // - attendance / assessments：当前为空态（No Attendance Records / No Assessment Results）
     // - classinfo：fieldset.profileform 内 label + form-control 键值对
+    // - attendance / assessments：两角色均改 WebView 承载（见 6c），不再解析
 
     /** Class List 页成员名：官网为西式「名 姓」，转中式「姓+名」并按姓名排序 */
     fun parseClassListMembers(html: String): List<String> {
@@ -607,9 +609,56 @@ object SMRTHTMLParser {
         }
     }
 
-    /** Attendance 页是否为空态（官网文案 No Attendance Records） */
-    fun parseClassAttendanceEmpty(html: String): Boolean = html.contains("No Attendance Records")
+    // MARK: - 6c. 教师端子页（角色判定 / Class List 原生列表）
+    //
+    // 2026-10-08 教师账号实测结构（对齐 iOS 同名解析函数）：
+    // - 角色判定：班级页侧栏含 gradebook 入口（学生端 6 项、教师端 7 项）
+    // - Assignments / Attendance / Assessments / Gradebook 交互繁多
+    //   → WebView 承载官网自理，不做解析
+    //   （原学生端 Attendance/Assessments 空态判定函数随之移除——两角色
+    //   均改 WebView 承载，结构随官网任意变化免维护）
+    // - Class List：纯展示表格（头像/姓名/Id/Email），原生化解析如下
 
-    /** Assessments 页是否为空态（官网文案 No Assessment Results） */
-    fun parseClassAssessmentsEmpty(html: String): Boolean = html.contains("No Assessment Results")
+    /** 是否教师端（班级页侧栏含 Gradebook 入口） */
+    fun isTeacherHTML(html: String): Boolean = html.contains("gradebook")
+
+    /**
+     * classes 列表页是否学生号：学生页有「Join a Class」加入班级入口
+     * （classblock emptyblock addblock + span.join），教师页没有。
+     * 注意：班级卡「我」角标是官网 JS 动态渲染，服务端 HTML 里没有，
+     * 不能用作特征。用于登录后区分账号角色；班级 course 页的
+     * gradebook 链接做硬校正。
+     */
+    fun classesPageIndicatesStudent(html: String): Boolean =
+        html.contains("addblock") || html.contains("Join a Class")
+
+    /**
+     * 教师端 Class List 成员行（表格：头像 / 姓名 / Id / Email；
+     * Current 与 Removed 两个 ?tab= 页同构，解析函数共用）
+     */
+    fun parseTeacherClassList(html: String): List<TeacherClassListMember> {
+        val members = ArrayList<TeacherClassListMember>()
+        for (rowMatch in HtmlUtil.matches("<tr[^>]*>([\\s\\S]*?)</tr>", html)) {
+            val row = rowMatch[1] ?: continue
+            // 行内首个 data-tippy-content 即姓名（td[1] 的名字 tooltip）
+            val studentId = HtmlUtil.firstGroup("view=student&id=(\\d+)", row) ?: continue
+            val nameRaw = HtmlUtil.firstGroup("data-tippy-content=\"([^\"]*)\"", row) ?: continue
+            val name = normalizeChineseName(HtmlUtil.stripTags(nameRaw).trim())
+            if (name.isEmpty()) continue
+            val tds = HtmlUtil.matches("<td[^>]*>([\\s\\S]*?)</td>", row).mapNotNull { it[1] }
+            // 列序：头像 / 姓名 / Id / Email / 操作
+            val number = if (tds.size > 2) HtmlUtil.stripTags(tds[2]).trim() else ""
+            val email = if (tds.size > 3) HtmlUtil.stripTags(tds[3]).trim() else ""
+            val avatar = HtmlUtil.firstGroup(
+                "<img src=\"([^\"]+)\"[^>]*class=\"[^\"]*profilecircle", row
+            )?.let { HtmlUtil.decodeEntities(it) }
+            members.add(
+                TeacherClassListMember(
+                    id = studentId, name = name,
+                    number = number, email = email, avatarURL = avatar
+                )
+            )
+        }
+        return members
+    }
 }

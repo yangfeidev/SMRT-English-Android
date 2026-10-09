@@ -12,6 +12,8 @@ import com.yangfei.smrtenglish.bean.LibraryHome
 import com.yangfei.smrtenglish.bean.StudentClass
 import com.yangfei.smrtenglish.constant.UrlConstant
 import com.yangfei.smrtenglish.parser.SMRTHTMLParser
+import com.yangfei.smrtenglish.util.EventBusUtil
+import com.yangfei.smrtenglish.util.SessionEvent
 
 /**
  * 业务接口封装（对齐 iOS SMRTClient）
@@ -120,20 +122,51 @@ object SmrtApi {
         return units
     }
 
+    // MARK: - 会话失效自动恢复（对齐 iOS SMRTClient.withSessionRecovery）
+
+    /**
+     * 会话失效自动恢复包装：登录态请求抛 notLoggedIn 时，用记住的账密
+     * 静默重登一次并重试原请求。
+     * - 重登成功 → 用户无感恢复，数据正常返回
+     * - 重登失败（无记住密码/密码已改）→ 会话确定失效，广播 TYPE_INVALID
+     *   让 MainActivity 全局切登录页——等效用户手动「退出登录→再登录」，避免
+     *   Classes 页拿缓存假登录态撑着、点进列表才失败的死局。
+     * 所有登录态抓取方法（myClasses/classCourse/classPageHTML/refreshMyDisplayName）
+     * 内部均已包上，调用方无需自行处理重登。
+     */
+    private suspend fun <T> withSessionRecovery(operation: suspend () -> T): T {
+        try {
+            return operation()
+        } catch (e: SmrtException) {
+            if (!e.isNotLoggedIn()) throw e
+            LogUtils.i(UrlConstant.HTTP_LOG, "session expired, trying silent relogin")
+            if (!autoReloginIfNeeded()) {
+                LogUtils.e(UrlConstant.HTTP_LOG, "silent relogin failed, broadcasting session invalid")
+                EventBusUtil.post(SessionEvent(SessionEvent.TYPE_INVALID))
+                throw e
+            }
+            LogUtils.i(UrlConstant.HTTP_LOG, "silent relogin ok, retrying request")
+            return operation()
+        }
+    }
+
     // MARK: - Classes（我的班级）
 
     /** 我的班级列表（登录态）。新账号无班级时返回空数组。 */
-    suspend fun myClasses(): List<StudentClass> {
+    /** 内部含会话恢复：失效先静默重登再重试，重登失败广播切登录页。 */
+    suspend fun myClasses(): List<StudentClass> = withSessionRecovery {
         val html = Request.getHtml(
             UrlConstant.CLASSES,
             requirePathContains = UrlConstant.CLASSES
         )
         if (isLoggedOutHTML(html)) throw SmrtException.notLoggedIn()
-        return SMRTHTMLParser.parseMyClasses(html)
+        // 顺手判定账号角色：学生号班级卡带「我」角标，教师号没有（零额外请求）
+        SessionManager.updateAccountRole(!SMRTHTMLParser.classesPageIndicatesStudent(html))
+        SMRTHTMLParser.parseMyClasses(html)
     }
 
-    /** 班级课程页（Course tab，单元树） */
-    suspend fun classCourse(classId: String): ClassCourse {
+    /** 班级课程页（Course tab，单元树）。内部含会话恢复（同 myClasses）。 */
+    suspend fun classCourse(classId: String): ClassCourse = withSessionRecovery {
         val html = Request.getHtml(
             UrlConstant.classCourse(classId),
             requirePathContains = "/sunshine/class/"
@@ -141,17 +174,28 @@ object SmrtApi {
         if (isLoggedOutHTML(html)) throw SmrtException.notLoggedIn()
         val course = SMRTHTMLParser.parseClassCourse(html)
         if (course.units.isEmpty()) throw SmrtException.parseFailed()
-        return course
+        // 角色硬校正：班级页侧栏 gradebook 链接是教师铁证
+        // （classes 页「Join a Class」入口判定兜底，打开班级后以此为准）
+        SessionManager.updateAccountRole(course.isTeacher)
+        course
     }
 
-    /** 班级子页面 HTML（Class List / Attendance / Assignments / Assessments / Class Info） */
-    suspend fun classPageHTML(classId: String, tab: ClassTab): String {
+    /** 班级子页面 HTML（Class List / Attendance / Assignments / Assessments / Class Info）。 */
+    /** 内部含会话恢复（同 myClasses）。 */
+    suspend fun classPageHTML(classId: String, tab: ClassTab): String =
+        classPageHTML(UrlConstant.classPage(classId, tab.path))
+
+    /**
+     * 任意官网路径抓 HTML（登录态，含会话恢复）。
+     * 教师端 Class List 的 ?tab=current-students/removed-students 子页用。
+     */
+    suspend fun classPageHTML(path: String): String = withSessionRecovery {
         val html = Request.getHtml(
-            UrlConstant.classPage(classId, tab.path),
+            path,
             requirePathContains = "/sunshine/class/"
         )
         if (isLoggedOutHTML(html)) throw SmrtException.notLoggedIn()
-        return html
+        html
     }
 
     /** 会话失效后用记住的账密静默重登（用户主动退出过的账号不重登） */
@@ -172,7 +216,9 @@ object SmrtApi {
     /** 拉取并缓存当前账号显示名（Me 页 name 字段，西式「名 姓」转中式）。失败回退缓存。 */
     suspend fun refreshMyDisplayName(): String? {
         val html = try {
-            Request.getHtml(UrlConstant.ME, requirePathContains = UrlConstant.ME)
+            withSessionRecovery {
+                Request.getHtml(UrlConstant.ME, requirePathContains = UrlConstant.ME)
+            }
         } catch (e: Exception) {
             return SessionManager.displayName
         }
