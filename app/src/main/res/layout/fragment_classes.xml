@@ -149,7 +149,7 @@
                                     android:paddingBottom="2dp"
                                     android:textSize="11sp"
                                     android:textStyle="bold"
-                                    tools:text="学生" />
+                                    tools:text="Student" />
                             </LinearLayout>
 
                             <TextView

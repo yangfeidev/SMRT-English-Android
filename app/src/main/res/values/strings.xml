@@ -59,8 +59,8 @@
     <!-- 教师端（对齐 iOS TeacherTabViews / ProfileSection 角色徽标） -->
     <string name="back">返回</string>
     <string name="teacher_rotate">切换横竖屏</string>
-    <string name="role_teacher">教师</string>
-    <string name="role_student">学生</string>
+    <string name="role_teacher">Teacher</string>
+    <string name="role_student">Student</string>
     <string name="teacher_list_current">Current</string>
     <string name="teacher_list_removed">Removed</string>
     <string name="teacher_students_empty">No Students</string>
