@@ -368,7 +368,8 @@ class ClassCourseActivity : BaseActivity<ActivityClassCourseBinding, ClassCourse
                     fixedViewportWidth = 1024, viewportShrinkLowerBound = 992,
                     viewportScale = 0.9, pageLoadJs = WebViewHelper.CHINESE_NAME_NORMALIZE_JS,
                     // Scheduled/Shared/Complete 是同 path 的 ?tab= 真实导航：
-                    // 折叠历史，否则返回键会逐级退回切换过的标签而非退出班级页
+                    // 折叠历史，否则返回键会逐级退回切换过的标签而非退出班级页。
+                    // 弹窗适配（adaptModals）默认开启，无需显式传
                     collapseTabHistory = true
                 )
             ClassTab.ASSESSMENTS ->

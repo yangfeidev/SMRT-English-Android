@@ -240,6 +240,49 @@ object WebViewHelper {
         ".rightside table{width:auto !important;min-width:0 !important;}"
 
     /**
+     * 弹窗（Bootstrap .modal）手机适配：官网弹窗 .modal-dialog 固定 600px
+     * （无 max-width 约束），而宽视口页手机端 CSS 视口只有 ~400px，
+     * 弹窗溢出 200px 且 .modal-body 桌面多列栅格（col-md-*）横向撑爆。
+     *
+     * 真机实测（Add Assignment）：dialog w=600 / viewport w=400 / overflow:visible，
+     * 右侧 Start Date 按钮与提示文字被截断。
+     *
+     * 处理：宽度跟随视口（保留桌面端 600px 上限，平板 1:1 时不超原尺寸）、
+     * 内容超高内部滚动、栅格列全部单列化、底部按钮留边距可换行。
+     */
+    const val MODAL_MOBILE_CSS =
+        ".modal .modal-dialog{width:calc(100% - 16px) !important;max-width:600px !important;margin:8px auto !important;}" +
+        ".modal .modal-content{max-height:calc(100vh - 32px) !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch !important;}" +
+        ".modal .modal-body{padding:12px !important;}" +
+        ".modal .modal-body .row > [class*='col-']{width:100% !important;padding-left:0 !important;padding-right:0 !important;}" +
+        ".modal .modal-footer{padding:8px 12px !important;}" +
+        ".modal .modal-footer .btn{margin:4px 0 4px 8px !important;}"
+
+    /**
+     * 官网隐藏弹窗迁移：站点把 #confirmModal（删除确认）/ #alertModal 放在
+     * `<footer>` 里，而 footer 被站点保持为不渲染（computed display:none）。
+     * Bootstrap .modal 是 position:fixed，其包含块被 0 尺寸的 footer 接管，
+     * 弹出时整体 0x0 —— 真机实测点删除 X 后背景变暗但弹窗不可见
+     * （modal w=0，No/Yes 按钮 w=0），且强制 footer display:block 无效。
+     *
+     * 处理：把 footer 内的 .modal 搬到 body 直下（实验验证立即恢复 400x739
+     * 正常渲染）。页面加载后执行一次即可；modal 显示/隐藏不依赖其在 DOM
+     * 中的位置。
+     */
+    const val MODAL_RELOCATE_JS =
+        "(function() {" +
+        "  function relocate() {" +
+        "    var f = document.querySelector('footer');" +
+        "    if (!f) { return; }" +
+        "    f.querySelectorAll('.modal').forEach(function(m) { document.body.appendChild(m); });" +
+        "  }" +
+        "  if (document.readyState === 'loading') {" +
+        "    document.addEventListener('DOMContentLoaded', relocate);" +
+        "  } else { relocate(); }" +
+        "  window.addEventListener('load', relocate);" +
+        "})();"
+
+    /**
      * 宽视口页横向平移解锁（Android 专属；iOS 无需）。
      *
      * 官网样式自带 html{overflow-x:hidden} 与 body{overflow-x:hidden}：
@@ -462,6 +505,14 @@ object WebViewHelper {
          * location.replace（替换当前历史项），返回键即直接退出本页。
          */
         val collapseTabHistory: Boolean = false,
+        /**
+         * 弹窗手机适配（MODAL_MOBILE_CSS + MODAL_RELOCATE_JS），默认开启：
+         * 官网每个班级页的 <footer> 都藏了 #confirmModal/#alertModal（删除
+         * 确认/提示框，Attendance 实测同样存在），且 Bootstrap .modal 固定
+         * 600px + 桌面多列栅格在手机端宽视口（~400px）溢出。默认开启避免
+         * 新增 WebView 页面漏配；纯展示页（无弹窗交互）注入亦无副作用。
+         */
+        val adaptModals: Boolean = true,
     )
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -522,6 +573,10 @@ object WebViewHelper {
             viewportJs(it, config.viewportShrinkLowerBound, scale)
         }
         val pageLoadJs = config.pageLoadJs
+        // 弹窗适配：CSS 走 style 注入通道（与 extraCss 同一机制），迁移 JS 走脚本通道
+        val modalAdaptJs = if (config.adaptModals) {
+            hideHeaderJs(MODAL_MOBILE_CSS) + MODAL_RELOCATE_JS
+        } else ""
         val client = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 // 视口脚本只在这里注入一次（对齐 iOS 的 documentStart WKUserScript）：
@@ -531,6 +586,11 @@ object WebViewHelper {
                 // CSS 尽早挂上，站点 header 首屏渲染前隐藏（脚本内部自带 head 重试）
                 if (config.hideSiteHeader || config.extraCss.isNotEmpty()) {
                     view?.evaluateJavascript(hideJs, null)
+                }
+                // 弹窗适配：CSS 越早挂上越好（避免弹窗首帧 600px 闪现），
+                // 迁移 JS 自带 DOMContentLoaded/load 双时机兜底
+                if (modalAdaptJs.isNotEmpty()) {
+                    view?.evaluateJavascript(modalAdaptJs, null)
                 }
                 // 同页 tab 导航折叠：越早注册越好（首屏就可能点 tab）
                 if (config.collapseTabHistory) {
@@ -542,6 +602,10 @@ object WebViewHelper {
                 // CSS 兜底再挂一次（同名规则重复无视觉影响；防早期注入被站点覆盖）
                 if (config.hideSiteHeader || config.extraCss.isNotEmpty()) {
                     view?.evaluateJavascript(hideJs, null)
+                }
+                // 弹窗迁移兜底：站点脚本可能在 load 后才把 modal 塞回 footer
+                if (modalAdaptJs.isNotEmpty()) {
+                    view?.evaluateJavascript(modalAdaptJs, null)
                 }
                 // 折叠脚本兜底再挂一次：站点可能重写 DOM / 早注入被覆盖，
                 // 且每次导航后需重新注册（document 是新的一份）

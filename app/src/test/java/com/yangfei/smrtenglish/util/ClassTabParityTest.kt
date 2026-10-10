@@ -218,6 +218,7 @@ class ClassTabParityTest {
             "COLLAPSE_TAB_HISTORY_JS" to WebViewHelper.COLLAPSE_TAB_HISTORY_JS,
             "CHINESE_NAME_NORMALIZE_JS" to WebViewHelper.CHINESE_NAME_NORMALIZE_JS,
             "WIDE_VIEWPORT_PAN_CSS" to WebViewHelper.WIDE_VIEWPORT_PAN_CSS,
+            "MODAL_RELOCATE_JS" to WebViewHelper.MODAL_RELOCATE_JS,
         )
         scripts.forEach { (name, js) ->
             assertFalse(
@@ -225,6 +226,43 @@ class ClassTabParityTest {
                 Regex("""(^|[^:'"])//""").containsMatchIn(js)
             )
         }
+    }
+
+    // MARK: - 弹窗手机适配
+
+    /**
+     * 官网 .modal-dialog 固定 600px 无 max-width，宽视口手机端 CSS 视口
+     * 仅 ~400px，弹窗溢出 200px（真机实测 dialog w=600 / viewport w=400）。
+     */
+    @Test
+    fun modal_css_should_constrain_dialog_to_viewport() {
+        val css = WebViewHelper.MODAL_MOBILE_CSS
+        assertTrue("dialog 宽度改跟视口", css.contains("width:calc(100% - 16px)"))
+        assertTrue("保留桌面 600px 上限（平板 1:1 不超原尺寸）", css.contains("max-width:600px"))
+        assertTrue("超高内部滚动", css.contains("overflow-y:auto"))
+        assertTrue("栅格列单列化", css.contains(".row > [class*='col-']"))
+        // 每条规则都必须带 !important，否则会被官网压缩样式按优先级反超
+        css.split("{").drop(1).forEach { rule ->
+            val body = rule.substringBefore("}")
+            assertTrue(
+                "规则缺 !important: $body",
+                body.contains("!important") || body.isBlank()
+            )
+        }
+    }
+
+    /**
+     * 站点把 #confirmModal/#alertModal 藏在 display:none 的 footer 里，
+     * Bootstrap .modal 的 position:fixed 包含块被 0 尺寸 footer 接管，
+     * 弹窗 0x0 不可见（真机实测点删除 X 后仅背景变暗）。需迁移到 body。
+     */
+    @Test
+    fun modal_relocate_js_should_move_footer_modals_to_body() {
+        val js = WebViewHelper.MODAL_RELOCATE_JS
+        assertTrue("定位 footer", js.contains("querySelector('footer')"))
+        assertTrue("迁移 footer 内所有 .modal", js.contains("querySelectorAll('.modal')"))
+        assertTrue("挂到 body 下", js.contains("document.body.appendChild(m)"))
+        assertTrue("DOMContentLoaded + load 双时机兜底", js.contains("addEventListener('load'"))
     }
 
     /**
